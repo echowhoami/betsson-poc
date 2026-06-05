@@ -30,11 +30,8 @@
          placeholder="https://webhook.site/your-unique-id" />
   <p class="muted">A path like <code>/steal</code> is appended automatically so it's easy to spot in your logs.</p>
 
-  <a id="intent" class="btn scheme disabled" href="#">Trigger leak (use this in Chrome)</a>
-  <a id="scheme" class="btn intent disabled" href="#">Custom scheme (other browsers / apps)</a>
-  <p class="muted">Chrome silently ignores a bare <code>betsson-oneapp://</code> link, so the primary button
-     uses the <code>intent://</code> form (confirmed working). Use the second button only from browsers/apps
-     that honour raw custom schemes.</p>
+  <a id="scheme" class="btn scheme disabled" href="#">1) Trigger via custom scheme</a>
+  <a id="intent" class="btn intent disabled" href="#">2) Trigger via intent:// (fallback)</a>
 
   <div>
     <button class="copy" id="copyBtn" disabled>Copy custom-scheme deeplink</button>
